@@ -69,6 +69,8 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    const username = prompt('Enter name')
+
     var socket = io();
 
     var form = document.getElementById('form');
@@ -78,7 +80,7 @@
       e.preventDefault();
       if (input.value) {
         const message = {
-          user: 'Pekka',
+          user: username,
           text: input.value
         }
         socket.emit('chat message', message);
@@ -86,9 +88,11 @@
       }
     });
 
-    socket.on('chat message', function (message) {
+    socket.emit('join', username)
+
+    socket.on('chat message', (message) => {
       var item = document.createElement('li');
-      item.textContent = `${message.user}: ${message.text}`;
+      item.textContent = `${message.user}: ${message.text} ${message.timestamp}`;
       messages.appendChild(item);
       window.scrollTo(0, document.body.scrollHeight);
     });

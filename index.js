@@ -2,6 +2,9 @@ const express = require('express')
 const http = require('http')
 const { Server } = require('socket.io')
 
+const { formatMessage } = require('./utils/messages')
+const { userJoin, getUsers, userLeave } = require('./utils/users')
+
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server)
@@ -11,17 +14,25 @@ app.get('/', (req, res) => {
 })
 
 io.on('connection', (socket) => {
-  console.log(`${socket.id} connected`)
+
+  socket.on('join', (username) => {
+    console.log(`${username} joined`)
+    userJoin(socket.id, username)
+    console.log('users:', getUsers())
+    io.emit('chat message', formatMessage('Bot', `${username} joined`))
+  })
 
   socket.on('chat message', (message) => {
-    console.log(message.user, message.text)
-    io.emit('chat message', message)
+    io.emit('chat message', formatMessage(message.user, message.text))
   })
 
-  socket.on('disconnect', (reason) => {
-    console.log(`${socket.id} disconnected, reason: ${reason}`)
+  socket.on('disconnect', () => {
+    const user = userLeave(socket.id)
+    console.log(user)
+    io.emit('chat message', formatMessage('Bot', `${user.username} left`))
+    console.log('users:', getUsers())
   })
-});
+})
 
 const PORT = process.env.PORT || 3000
 server.listen(PORT, () => {
