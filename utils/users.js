@@ -1,11 +1,20 @@
 const users = []
 
-const userJoin = (id, username) => {
-  const user = { id, username }
+const userJoin = (id, username, room) => {
+  const user = { id, username, room }
 
   users.push(user)
 
   return user
+}
+
+const getUserById = (id) => {
+  return users.find(user => user.id === id)
+}
+
+const getUsersInRoom = (room) => {
+  const usersInRoom = users.filter(user => user.room === room)
+  return usersInRoom.map(u => u.username)
 }
 
 const getUsers = () => {
@@ -20,4 +29,4 @@ const userLeave = (id) => {
   }
 }
 
-module.exports = { userJoin, getUsers, userLeave }
+module.exports = { userJoin, getUserById, getUsersInRoom, getUsers, userLeave }

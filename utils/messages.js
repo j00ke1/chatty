@@ -1,6 +1,6 @@
-const formatMessage = (user, text) => {
+const formatMessage = (username, text) => {
   return {
-    user,
+    username,
     text,
     timestamp: new Date().getTime()
   }

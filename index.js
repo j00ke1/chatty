@@ -1,40 +1,67 @@
 const express = require('express')
 const http = require('http')
 const { Server } = require('socket.io')
+const cors = require('cors')
 
 const { formatMessage } = require('./utils/messages')
-const { userJoin, getUsers, userLeave } = require('./utils/users')
+const { userJoin, getUserById, getUsersInRoom, getUsers, userLeave } = require('./utils/users')
 
 const app = express()
 const server = http.createServer(app)
-const io = new Server(server)
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+app.use(cors())
+
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
 })
 
 io.on('connection', (socket) => {
+  console.log(`${socket.id} connected`)
 
-  socket.on('join', (username) => {
-    console.log(`${username} joined`)
-    userJoin(socket.id, username)
+  socket.on('join room', ({ username, room }) => {
+    socket.join(room)
+    const user = userJoin(socket.id, username, room)
+    console.log(`${user.username} joined room ${user.room}`)
     console.log('users:', getUsers())
-    io.emit('chat message', formatMessage('Bot', `${username} joined`))
+    io.to(user.room).emit('chat message', formatMessage('ChattyBot', `User ${user.username} joined the room.`))
+    io.to(user.room).emit('room users', getUsersInRoom(user.room))
   })
 
   socket.on('chat message', (message) => {
-    io.emit('chat message', formatMessage(message.user, message.text))
+    const user = getUserById(socket.id)
+    if (user) {
+      io.to(user.room).emit('chat message', formatMessage(user.username, message.text))
+    }
+  })
+
+  socket.on('leave room', () => {
+    const user = userLeave(socket.id)
+    console.log(user)
+    if (user) {
+      console.log(`${user.username} left room ${user.room}`)
+      io.to(user.room).emit('chat message', formatMessage('ChattyBot', `User ${user.username} left the room.`))
+      io.to(user.room).emit('room users', getUsersInRoom(user.room))
+    }
+    console.log('users:', getUsers())
   })
 
   socket.on('disconnect', () => {
     const user = userLeave(socket.id)
     console.log(user)
-    io.emit('chat message', formatMessage('Bot', `${user.username} left`))
+    if (user) {
+      console.log(`${user.username} left room ${user.room}`)
+      io.to(user.room).emit('chat message', formatMessage('ChattyBot', `User ${user.username} left the room.`))
+      io.to(user.room).emit('room users', getUsersInRoom(user.room))
+    }
+    console.log(`${socket.id} disconnected`)
     console.log('users:', getUsers())
   })
 })
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 server.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`)
 })
