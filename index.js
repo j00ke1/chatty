@@ -19,13 +19,10 @@ const io = new Server(server, {
 })
 
 io.on('connection', (socket) => {
-  console.log(`${socket.id} connected`)
 
   socket.on('join room', ({ username, room }) => {
     socket.join(room)
     const user = userJoin(socket.id, username, room)
-    console.log(`${user.username} joined room ${user.room}`)
-    console.log('users:', getUsers())
     io.to(user.room).emit('chat message', formatMessage('ChattyBot', `User ${user.username} joined the room.`))
     io.to(user.room).emit('room users', getUsersInRoom(user.room))
   })
@@ -39,25 +36,18 @@ io.on('connection', (socket) => {
 
   socket.on('leave room', () => {
     const user = userLeave(socket.id)
-    console.log(user)
     if (user) {
-      console.log(`${user.username} left room ${user.room}`)
       io.to(user.room).emit('chat message', formatMessage('ChattyBot', `User ${user.username} left the room.`))
       io.to(user.room).emit('room users', getUsersInRoom(user.room))
     }
-    console.log('users:', getUsers())
   })
 
   socket.on('disconnect', () => {
     const user = userLeave(socket.id)
-    console.log(user)
     if (user) {
-      console.log(`${user.username} left room ${user.room}`)
       io.to(user.room).emit('chat message', formatMessage('ChattyBot', `User ${user.username} left the room.`))
       io.to(user.room).emit('room users', getUsersInRoom(user.room))
     }
-    console.log(`${socket.id} disconnected`)
-    console.log('users:', getUsers())
   })
 })
 
